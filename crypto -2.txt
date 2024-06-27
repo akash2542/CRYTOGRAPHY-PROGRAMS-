@@ -1,0 +1,96 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+// Function to perform monoalphabetic substitution encryption
+void encrypt(char message[], char key[]) {
+    for (int i = 0; message[i] != '\0'; ++i) {
+        if (isalpha(message[i])) {
+            // Determine if the character is uppercase or lowercase
+            if (isupper(message[i])) {
+                message[i] = toupper(key[message[i] - 'A']);
+            } else {
+                message[i] = tolower(key[message[i] - 'a']);
+            }
+        }
+    }
+}
+
+// Function to perform monoalphabetic substitution decryption
+void decrypt(char message[], char key[]) {
+    char decrypt_key[26];
+    // Creating decryption key by reversing encryption key
+    for (int i = 0; i < 26; ++i) {
+        decrypt_key[key[i] - 'A'] = 'A' + i;
+        decrypt_key[key[i] - 'a'] = 'a' + i;
+    }
+
+    for (int i = 0; message[i] != '\0'; ++i) {
+        if (isalpha(message[i])) {
+            // Determine if the character is uppercase or lowercase
+            if (isupper(message[i])) {
+                message[i] = decrypt_key[message[i] - 'A'];
+            } else {
+                message[i] = decrypt_key[message[i] - 'a'];
+            }
+        }
+    }
+}
+
+int main() {
+    char message[100];
+    char key[26];
+    int choice;
+
+    printf("Enter message to encrypt/decrypt: ");
+    fgets(message, sizeof(message), stdin);
+
+    printf("Enter encryption key (26 unique letters): ");
+    fgets(key, sizeof(key), stdin);
+
+    // Remove newline characters if present
+    message[strcspn(message, "\n")] = '\0';
+    key[strcspn(key, "\n")] = '\0';
+
+    // Validate key length and uniqueness of characters
+    if (strlen(key) != 26) {
+        printf("Error: Key must be exactly 26 characters long.\n");
+        return 1;
+    }
+
+    // Check for uniqueness of characters in the key
+    int char_count[26] = {0};
+    for (int i = 0; i < 26; ++i) {
+        if (!isalpha(key[i])) {
+            printf("Error: Key must contain only alphabetic characters.\n");
+            return 1;
+        }
+        int index = toupper(key[i]) - 'A';
+        if (char_count[index] > 0) {
+            printf("Error: Key must contain unique characters.\n");
+            return 1;
+        }
+        char_count[index]++;
+    }
+
+    printf("1. Encrypt\n2. Decrypt\nEnter your choice (1 or 2): ");
+    scanf("%d", &choice);
+    getchar();  // Consume newline left by scanf
+
+    switch (choice) {
+        case 1:
+            encrypt(message, key);
+            printf("Encrypted message: %s\n", message);
+            break;
+        case 2:
+            decrypt(message, key);
+            printf("Decrypted message: %s\n", message);
+            break;
+        default:
+            printf("Invalid choice.\n");
+    }
+
+    return 0;
+}
+output:

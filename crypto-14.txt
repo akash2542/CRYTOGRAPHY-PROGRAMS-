@@ -1,0 +1,53 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+// Function to perform one-time pad encryption
+void oneTimePadVigenere(char *plaintext, int *key, int key_length, char *ciphertext) {
+    int i;
+    int n = strlen(plaintext);
+
+    for (i = 0; i < n; i++) {
+        char ch = plaintext[i];
+        if (isalpha(ch)) {
+            // Determine shift amount based on key
+            int shift = key[i % key_length];
+
+            // Adjust shift to be within 0-25
+            if (islower(ch)) {
+                ciphertext[i] = 'a' + (ch - 'a' + shift) % 26;
+            } else {
+                ciphertext[i] = 'A' + (ch - 'A' + shift) % 26;
+            }
+        } else {
+            ciphertext[i] = ch; // Non-alphabetic characters remain unchanged
+        }
+    }
+    ciphertext[n] = '\0'; // Append null terminator to end the string
+}
+
+int main() {
+    char plaintext[] = "Meet me at the usual place at ten rather than eight oclock.";
+    int key[] = {3, 19, 5}; // Example key: shifts of 3, 19, 5...
+    int key_length = sizeof(key) / sizeof(key[0]);
+
+    char ciphertext[strlen(plaintext) + 1]; // +1 for null terminator
+
+    // Encrypt using one-time pad Vigenère cipher
+    oneTimePadVigenere(plaintext, key, key_length, ciphertext);
+
+    // Print encrypted ciphertext
+    printf("Plaintext: %s\n", plaintext);
+    printf("Key: ");
+    for (int i = 0; i < key_length; i++) {
+        printf("%d ", key[i]);
+    }
+    printf("\n");
+    printf("Ciphertext: %s\n", ciphertext);
+
+    return 0;
+}
+output:
+Plaintext: Meet me at the usual place at ten rather than eight oclock.
+Key: 3 19 5 
+Ciphertext: Phdm sf cm jxjhe eipaf tnrt evu qrrnf biieh ldmmwv.

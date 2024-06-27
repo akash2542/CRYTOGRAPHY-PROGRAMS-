@@ -1,0 +1,105 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+#define ALPHABET_SIZE 26
+
+// English letter frequencies (in %)
+const float english_letter_frequency[ALPHABET_SIZE] = {
+    8.167, 1.492, 2.782, 4.253, 12.702, 2.228, 2.015, 6.094, 6.966, 0.153,
+    0.772, 4.025, 2.406, 6.749, 7.507, 1.929, 0.095, 5.987, 6.327, 9.056,
+    2.758, 0.978, 2.360, 0.150, 1.974, 0.074
+};
+
+// Function to calculate letter frequencies in a string
+void calculateLetterFrequencies(const char *text, float *frequencies) {
+    int i;
+    int total_letters = 0;
+    memset(frequencies, 0, ALPHABET_SIZE * sizeof(float));
+
+    for (i = 0; text[i] != '\0'; i++) {
+        if (isalpha(text[i])) {
+            int index = tolower(text[i]) - 'a';
+            frequencies[index]++;
+            total_letters++;
+        }
+    }
+
+    // Convert counts to percentages
+    for (i = 0; i < ALPHABET_SIZE; i++) {
+        frequencies[i] = (frequencies[i] / total_letters) * 100.0;
+    }
+}
+
+// Function to decrypt a message with a given shift
+void decryptMessage(const char *ciphertext, int shift, char *plaintext) {
+    int i;
+    for (i = 0; ciphertext[i] != '\0'; i++) {
+        if (isalpha(ciphertext[i])) {
+            char base = islower(ciphertext[i]) ? 'a' : 'A';
+            plaintext[i] = ((ciphertext[i] - base - shift + ALPHABET_SIZE) % ALPHABET_SIZE) + base;
+        } else {
+            plaintext[i] = ciphertext[i];
+        }
+    }
+    plaintext[i] = '\0';
+}
+
+// Function to score the decrypted plaintext based on letter frequency similarity
+float scorePlaintext(const float *plaintext_freq, const float *english_freq) {
+    float score = 0.0;
+    for (int i = 0; i < ALPHABET_SIZE; i++) {
+        score += fabs(plaintext_freq[i] - english_freq[i]);
+    }
+    return score;
+}
+
+// Function to perform the letter frequency attack and print top N possible plaintexts
+void letterFrequencyAttack(const char *ciphertext, int topN) {
+    float ciphertext_freq[ALPHABET_SIZE];
+    calculateLetterFrequencies(ciphertext, ciphertext_freq);
+
+    // Attempt all shifts from 0 to 25
+    printf("Top %d possible plaintexts:\n", topN);
+    for (int shift = 0; shift < ALPHABET_SIZE; shift++) {
+        char plaintext[strlen(ciphertext) + 1];
+        decryptMessage(ciphertext, shift, plaintext);
+
+        float plaintext_freq[ALPHABET_SIZE];
+        calculateLetterFrequencies(plaintext, plaintext_freq);
+
+        float score = scorePlaintext(plaintext_freq, english_letter_frequency);
+
+        // Print plaintext and score
+        printf("Shift %2d: %s (Score: %.2f)\n", shift, plaintext, score);
+    }
+}
+
+int main() {
+    char ciphertext[1000]; // Assuming a reasonable maximum length for input
+    int topN;
+
+    // Read ciphertext from user
+    printf("Enter the ciphertext: ");
+    fgets(ciphertext, sizeof(ciphertext), stdin);
+    ciphertext[strcspn(ciphertext, "\n")] = '\0'; // Remove newline character if present
+
+    // Ask user for top N possible plaintexts
+    printf("Enter the number of top possible plaintexts to display: ");
+    scanf("%d", &topN);
+
+    // Perform letter frequency attack and display results
+    letterFrequencyAttack(ciphertext, topN);
+
+    return 0;
+}
+output:
+Enter the ciphertext: Khoor zruog wklv lwvxl vodwrxv ph wkhu ydw wrsshu
+Enter the number of top possible plaintexts to display: 5
+Top 5 possible plaintexts:
+Shift  0: Khoor zruog wklv lwvxl vodwrxv ph wkhu ydw wrsshu (Score: 124.85)
+Shift  1: Jgnnq yqtnf vjku kvwuk uncvqwuw og vjgt xcv vqrrgt (Score: 133.06)
+Shift  2: Fimmp xpsme uijt jwvtj tmbuatvt nf uifs wbu upqqfs (Score: 119.22)
+Shift  3: Ehllo world this isvsi slazaszr me the vzt topper (Score: 114.85)
+Shift  4: Dgkkn vnqkc sgr hrurh rkzyzryq ld sgd uys snoodq (Score: 118.19)

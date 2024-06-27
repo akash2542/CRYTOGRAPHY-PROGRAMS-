@@ -1,0 +1,101 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+// English letter frequencies (from 'A' to 'Z')
+float english_freq[26] = {
+    0.0817, 0.0149, 0.0278, 0.0425, 0.1270, 0.0223, 0.0202, 0.0609, 0.0697, 0.0015,
+    0.0077, 0.0403, 0.0241, 0.0675, 0.0751, 0.0193, 0.0010, 0.0599, 0.0633, 0.0906,
+    0.0276, 0.0098, 0.0236, 0.0015, 0.0197, 0.0007
+};
+
+// Function to calculate the greatest common divisor (gcd)
+int gcd(int a, int b) {
+    while (b != 0) {
+        int temp = b;
+        b = a % b;
+        a = temp;
+    }
+    return a;
+}
+
+// Function to find the modular multiplicative inverse of a mod m
+// Returns -1 if inverse doesn't exist
+int mod_inverse(int a, int m) {
+    a = a % m;
+    for (int x = 1; x < m; x++) {
+        if ((a * x) % m == 1) {
+            return x;
+        }
+    }
+    return -1; // Inverse doesn't exist
+}
+
+// Function to calculate letter frequencies in the ciphertext
+void calculate_letter_frequencies(char ciphertext[], float frequencies[]) {
+    int total_letters = 0;
+    memset(frequencies, 0, 26 * sizeof(float));
+
+    for (int i = 0; ciphertext[i] != '\0'; ++i) {
+        char ch = toupper(ciphertext[i]);
+        if (isalpha(ch)) {
+            frequencies[ch - 'A']++;
+            total_letters++;
+        }
+    }
+
+    for (int i = 0; i < 26; ++i) {
+        frequencies[i] /= total_letters;
+    }
+}
+
+// Function to break the affine cipher using known letter frequencies
+void break_affine_cipher(float ciphertext_freq[], float english_freq[], int *a, int *b) {
+    float max_corr = 0.0;
+    *a = -1;
+    *b = -1;
+
+    // Try all possible values of a and b and find the best match with English letter frequencies
+    for (int i = 1; i < 26; ++i) {
+        if (gcd(i, 26) == 1) {  // Check if i is coprime with 26
+            for (int j = 0; j < 26; ++j) {
+                // Calculate correlation coefficient
+                float correlation = 0.0;
+                for (int k = 0; k < 26; ++k) {
+                    correlation += ciphertext_freq[k] * english_freq[(k - j + 26) % 26];
+                }
+
+                if (correlation > max_corr) {
+                    max_corr = correlation;
+                    *a = i;
+                    *b = j;
+                }
+            }
+        }
+    }
+}
+
+int main() {
+    char ciphertext[100];
+    float ciphertext_freq[26];
+    int a, b;
+
+    printf("Enter the ciphertext: ");
+    fgets(ciphertext, sizeof(ciphertext), stdin);
+
+    calculate_letter_frequencies(ciphertext, ciphertext_freq);
+
+    break_affine_cipher(ciphertext_freq, english_freq, &a, &b);
+
+    if (a == -1 || b == -1) {
+        printf("Unable to break the cipher with the given information.\n");
+    } else {
+        printf("Probable key coefficients (a, b): (%d, %d)\n", a, b);
+    }
+
+    return 0;
+}
+output:
+Enter the ciphertext: BUBUBU
+Probable key coefficients (a, b): (1, 1)

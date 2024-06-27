@@ -1,0 +1,177 @@
+encryption code:
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+#define MATRIX_SIZE 2
+
+// Function to perform matrix multiplication modulo 26
+void matrixMultiply(int key[MATRIX_SIZE][MATRIX_SIZE], int vector[MATRIX_SIZE], int result[MATRIX_SIZE]) {
+    int i, j;
+    for (i = 0; i < MATRIX_SIZE; ++i) {
+        result[i] = 0;
+        for (j = 0; j < MATRIX_SIZE; ++j) {
+            result[i] += key[i][j] * vector[j];
+        }
+        result[i] %= 26; // Apply modulo 26
+    }
+}
+
+// Function to convert plaintext characters to numerical values (A=0, B=1, ..., Z=25)
+void textToNumerical(char *plaintext, int numerical[]) {
+    int i;
+    for (i = 0; i < strlen(plaintext); ++i) {
+        if (isalpha(plaintext[i])) {
+            numerical[i] = toupper(plaintext[i]) - 'A';
+        } else {
+            numerical[i] = plaintext[i]; // Non-alphabetic characters remain unchanged
+        }
+    }
+}
+
+// Function to convert numerical values back to characters
+void numericalToText(int numerical[], char *ciphertext) {
+    int i;
+    for (i = 0; i < strlen(ciphertext); ++i) {
+        if (isalpha(ciphertext[i])) {
+            ciphertext[i] = 'A' + numerical[i];
+        }
+    }
+}
+
+int main() {
+    int key[MATRIX_SIZE][MATRIX_SIZE] = {
+        {9, 4},
+        {5, 7}
+    };
+    char plaintext[] = "meet me at the usual place at ten rather than eight oclock";
+    int numerical[strlen(plaintext)];
+    int encrypted_numerical[strlen(plaintext)];
+    char ciphertext[strlen(plaintext)];
+
+    // Convert plaintext to numerical values
+    textToNumerical(plaintext, numerical);
+
+    // Encrypt using Hill cipher
+    int i;
+    for (i = 0; i < strlen(plaintext); i += MATRIX_SIZE) {
+        int vector[MATRIX_SIZE] = {numerical[i] % 26, numerical[i + 1] % 26};
+        int result[MATRIX_SIZE];
+        matrixMultiply(key, vector, result);
+        encrypted_numerical[i] = result[0];
+        encrypted_numerical[i + 1] = result[1];
+    }
+
+    // Convert numerical values back to ciphertext
+    numericalToText(encrypted_numerical, ciphertext);
+
+    // Print encrypted ciphertext
+    printf("Encrypted ciphertext:\n%s\n", ciphertext);
+
+    return 0;
+}
+decryption code:
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+#define MATRIX_SIZE 2
+
+// Function to perform matrix multiplication modulo 26
+void matrixMultiply(int key[MATRIX_SIZE][MATRIX_SIZE], int vector[MATRIX_SIZE], int result[MATRIX_SIZE]) {
+    int i, j;
+    for (i = 0; i < MATRIX_SIZE; ++i) {
+        result[i] = 0;
+        for (j = 0; j < MATRIX_SIZE; ++j) {
+            result[i] += key[i][j] * vector[j];
+        }
+        result[i] %= 26; // Apply modulo 26
+    }
+}
+
+// Function to calculate the modular multiplicative inverse of a number 'a' under modulo 'm'
+int modInverse(int a, int m) {
+    a = a % m;
+    for (int x = 1; x < m; x++) {
+        if ((a * x) % m == 1) {
+            return x;
+        }
+    }
+    return 1;
+}
+
+// Function to find the determinant of a 2x2 matrix
+int determinant(int key[MATRIX_SIZE][MATRIX_SIZE]) {
+    return key[0][0] * key[1][1] - key[0][1] * key[1][0];
+}
+
+// Function to calculate the inverse of a 2x2 matrix modulo 26
+void inverseMatrix(int key[MATRIX_SIZE][MATRIX_SIZE], int inverse[MATRIX_SIZE][MATRIX_SIZE]) {
+    int det = determinant(key);
+    int invDet = modInverse(det, 26);
+
+    inverse[0][0] = key[1][1];
+    inverse[1][1] = key[0][0];
+    inverse[0][1] = (key[0][1] * -1 + 26) % 26;
+    inverse[1][0] = (key[1][0] * -1 + 26) % 26;
+
+    for (int i = 0; i < MATRIX_SIZE; i++) {
+        for (int j = 0; j < MATRIX_SIZE; j++) {
+            inverse[i][j] = (inverse[i][j] * invDet) % 26;
+            if (inverse[i][j] < 0)
+                inverse[i][j] += 26;
+        }
+    }
+}
+
+// Function to convert numerical values back to characters
+void numericalToText(int numerical[], char *plaintext) {
+    int i;
+    for (i = 0; i < strlen(plaintext); ++i) {
+        if (isalpha(plaintext[i])) {
+            plaintext[i] = 'A' + numerical[i];
+        }
+    }
+}
+
+int main() {
+    int key[MATRIX_SIZE][MATRIX_SIZE] = {
+        {9, 4},
+        {5, 7}
+    };
+    char ciphertext[] = "DPTWZLBBWHPZYWRPHKRBDWKIKYGAVKNJKUKJXBHSWPIWECBECXVYXCYFEY";
+    int numerical[strlen(ciphertext)];
+    int decrypted_numerical[strlen(ciphertext)];
+    char plaintext[strlen(ciphertext)];
+
+    // Convert ciphertext to numerical values
+    textToNumerical(ciphertext, numerical);
+
+    // Calculate inverse of the key matrix
+    int inverse[MATRIX_SIZE][MATRIX_SIZE];
+    inverseMatrix(key, inverse);
+
+    // Decrypt using Hill cipher
+    int i;
+    for (i = 0; i < strlen(ciphertext); i += MATRIX_SIZE) {
+        int vector[MATRIX_SIZE] = {numerical[i] % 26, numerical[i + 1] % 26};
+        int result[MATRIX_SIZE];
+        matrixMultiply(inverse, vector, result);
+        decrypted_numerical[i] = result[0];
+        decrypted_numerical[i + 1] = result[1];
+    }
+
+    // Convert numerical values back to plaintext
+    numericalToText(decrypted_numerical, plaintext);
+
+    // Print decrypted plaintext
+    printf("Decrypted plaintext:\n%s\n", plaintext);
+
+    return 0;
+}
+output1:
+Encrypted ciphertext:
+DPTWZLBBWHPZYWRPHKRBDWKIKYGAVKNJKUKJXBHSWPIWECBECXVYXCYFEY
+output2:
+Decrypted plaintext:
+MEETMEATTHEUSUALPLACEATTENRATHERTHANEIGHTOCLOCKXXX

@@ -1,0 +1,137 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+#define MATRIX_SIZE 2
+
+// Function to perform matrix multiplication modulo 26
+void matrixMultiply(int key[MATRIX_SIZE][MATRIX_SIZE], int vector[MATRIX_SIZE], int result[MATRIX_SIZE]) {
+    int i, j;
+    for (i = 0; i < MATRIX_SIZE; ++i) {
+        result[i] = 0;
+        for (j = 0; j < MATRIX_SIZE; ++j) {
+            result[i] += key[i][j] * vector[j];
+        }
+        result[i] %= 26; // Apply modulo 26
+    }
+}
+
+// Function to calculate the modular multiplicative inverse of a number 'a' under modulo 'm'
+int modInverse(int a, int m) {
+    a = a % m;
+    for (int x = 1; x < m; x++) {
+        if ((a * x) % m == 1) {
+            return x;
+        }
+    }
+    return 1;
+}
+
+// Function to find the determinant of a 2x2 matrix
+int determinant(int key[MATRIX_SIZE][MATRIX_SIZE]) {
+    return key[0][0] * key[1][1] - key[0][1] * key[1][0];
+}
+
+// Function to calculate the inverse of a 2x2 matrix modulo 26
+void inverseMatrix(int key[MATRIX_SIZE][MATRIX_SIZE], int inverse[MATRIX_SIZE][MATRIX_SIZE]) {
+    int det = determinant(key);
+    int invDet = modInverse(det, 26);
+
+    inverse[0][0] = key[1][1];
+    inverse[1][1] = key[0][0];
+    inverse[0][1] = (key[0][1] * -1 + 26) % 26;
+    inverse[1][0] = (key[1][0] * -1 + 26) % 26;
+
+    for (int i = 0; i < MATRIX_SIZE; i++) {
+        for (int j = 0; j < MATRIX_SIZE; j++) {
+            inverse[i][j] = (inverse[i][j] * invDet) % 26;
+            if (inverse[i][j] < 0)
+                inverse[i][j] += 26;
+        }
+    }
+}
+
+// Function to convert plaintext characters to numerical values (A=0, B=1, ..., Z=25)
+void textToNumerical(char *plaintext, int numerical[]) {
+    int i;
+    for (i = 0; i < strlen(plaintext); ++i) {
+        if (isalpha(plaintext[i])) {
+            numerical[i] = toupper(plaintext[i]) - 'A';
+        } else {
+            numerical[i] = plaintext[i]; // Non-alphabetic characters remain unchanged
+        }
+    }
+}
+
+// Function to convert numerical values back to characters
+void numericalToText(int numerical[], char *ciphertext) {
+    int i;
+    for (i = 0; i < strlen(ciphertext); ++i) {
+        if (isalpha(ciphertext[i])) {
+            ciphertext[i] = 'A' + numerical[i];
+        }
+    }
+}
+
+// Function to attack Hill cipher with known plaintext-ciphertext pairs
+void attackHillCipher(char *plaintext, char *ciphertext, int key[MATRIX_SIZE][MATRIX_SIZE]) {
+    int numerical_plaintext[strlen(plaintext)];
+    int numerical_ciphertext[strlen(ciphertext)];
+    int decrypted_numerical[strlen(ciphertext)];
+    char decrypted_plaintext[strlen(ciphertext)];
+
+    // Convert plaintext and ciphertext to numerical values
+    textToNumerical(plaintext, numerical_plaintext);
+    textToNumerical(ciphertext, numerical_ciphertext);
+
+    // Calculate inverse of the key matrix
+    int inverse[MATRIX_SIZE][MATRIX_SIZE];
+    inverseMatrix(key, inverse);
+
+    // Deduce the key using the known plaintext-ciphertext pair
+    int encrypted_vector[MATRIX_SIZE] = {numerical_plaintext[0] % 26, numerical_plaintext[1] % 26};
+    int encrypted_result[MATRIX_SIZE] = {numerical_ciphertext[0] % 26, numerical_ciphertext[1] % 26};
+
+    // Calculate the key matrix
+    int i, j;
+    for (i = 0; i < MATRIX_SIZE; i++) {
+        for (j = 0; j < MATRIX_SIZE; j++) {
+            key[i][j] = (inverse[i][0] * encrypted_result[0] + inverse[i][1] * encrypted_result[1]) % 26;
+            if (key[i][j] < 0) {
+                key[i][j] += 26;
+            }
+        }
+    }
+
+    // Decrypt the ciphertext using deduced key matrix
+    for (i = 0; i < strlen(ciphertext); i += MATRIX_SIZE) {
+        int vector[MATRIX_SIZE] = {numerical_ciphertext[i] % 26, numerical_ciphertext[i + 1] % 26};
+        int result[MATRIX_SIZE];
+        matrixMultiply(key, vector, result);
+        decrypted_numerical[i] = result[0];
+        decrypted_numerical[i + 1] = result[1];
+    }
+
+    // Convert numerical values back to plaintext
+    numericalToText(decrypted_numerical, decrypted_plaintext);
+
+    // Print decrypted plaintext
+    printf("Decrypted plaintext (using known plaintext attack):\n%s\n", decrypted_plaintext);
+}
+
+int main() {
+    int key[MATRIX_SIZE][MATRIX_SIZE] = {
+        {9, 4},
+        {5, 7}
+    };
+    char plaintext[] = "meetme";
+    char ciphertext[] = "DPTWZL"; // Corresponding ciphertext for "meetme"
+
+    // Attack Hill cipher with known plaintext-ciphertext pairs
+    attackHillCipher(plaintext, ciphertext, key);
+
+    return 0;
+}
+output:
+Decrypted plaintext (using known plaintext attack):
+MEE

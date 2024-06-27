@@ -1,0 +1,119 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+#define SIZE 5 
+
+void prepareKey(char key[], char keyMatrix[SIZE][SIZE]);
+void encrypt(char keyMatrix[SIZE][SIZE], char pair[]);
+
+int main() {
+    char key[26];
+    char keyMatrix[SIZE][SIZE];
+    char plaintext[100]; 
+    char pair[3]; 
+
+    printf("Enter the keyword (no spaces, only alphabets): ");
+    scanf("%s", key);
+    printf("Enter the plaintext to encrypt (only alphabets): ");
+    scanf("%s", plaintext);
+
+    int len = strlen(plaintext);
+    for (int i = 0; i < len; i++) {
+        if (!isalpha(plaintext[i])) {
+            for (int j = i; j < len - 1; j++) {
+                plaintext[j] = plaintext[j + 1];
+            }
+            len--;
+            plaintext[len] = '\0';
+            i--; 
+        }
+    }
+
+    prepareKey(key, keyMatrix);
+
+    len = strlen(plaintext);
+    for (int i = 0; i < len; i += 2) {
+        pair[0] = plaintext[i];
+        pair[1] = (i + 1 < len) ? plaintext[i + 1] : 'x';
+        pair[2] = '\0';
+
+        encrypt(keyMatrix, pair);
+
+        printf("%s", pair);
+    }
+
+    printf("\n");
+
+    return 0;
+}
+
+void prepareKey(char key[], char keyMatrix[SIZE][SIZE]) {
+    char *ptr = key;
+    int len = strlen(key);
+    char alphabet[26] = "abcdefghijklmnopqrstuvwxyz";
+    int used[26] = {0}; 
+    int i, j;
+
+    for (i = 0; i < len; i++) {
+        key[i] = tolower(key[i]);
+    }
+
+    for (i = 0; i < len; i++) {
+        if (key[i] == 'j') key[i] = 'i'; 
+        if (!used[key[i] - 'a']) {
+            used[key[i] - 'a'] = 1;
+        } else {
+            for (j = i; j < len - 1; j++) {
+                key[j] = key[j + 1];
+            }
+            len--;
+            key[len] = '\0';
+            i--;
+        }
+    }
+
+    int keyIndex = 0;
+    for (i = 0; i < SIZE; i++) {
+        for (j = 0; j < SIZE; j++) {
+            if (keyIndex < len) {
+                keyMatrix[i][j] = key[keyIndex++];
+            } else {
+                while (used[alphabet[keyIndex] - 'a']) keyIndex++;
+                keyMatrix[i][j] = alphabet[keyIndex++];
+            }
+        }
+    }
+}
+
+void encrypt(char keyMatrix[SIZE][SIZE], char pair[]) {
+    char a = pair[0];
+    char b = pair[1];
+    int r1, r2, c1, c2;
+
+    for (int i = 0; i < SIZE; i++) {
+        for (int j = 0; j < SIZE; j++) {
+            if (keyMatrix[i][j] == a) {
+                r1 = i;
+                c1 = j;
+            } else if (keyMatrix[i][j] == b) {
+                r2 = i;
+                c2 = j;
+            }
+        }
+    }
+
+    if (r1 == r2) {
+        pair[0] = keyMatrix[r1][(c1 + 1) % SIZE];
+        pair[1] = keyMatrix[r2][(c2 + 1) % SIZE];
+    }
+   
+    else if (c1 == c2) {
+        pair[0] = keyMatrix[(r1 + 1) % SIZE][c1];
+        pair[1] = keyMatrix[(r2 + 1) % SIZE][c2];
+    }
+    else {
+        pair[0] = keyMatrix[r1][c2];
+        pair[1] = keyMatrix[r2][c1];
+    }
+}

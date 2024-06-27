@@ -1,0 +1,91 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+#define GRID_SIZE 5
+
+// Function to prepare the Playfair matrix from the given matrix string
+void prepareMatrix(char *matrixString, char matrix[GRID_SIZE][GRID_SIZE]) {
+    int i, j, index = 0;
+
+    // Convert matrixString to uppercase and remove spaces
+    char temp[GRID_SIZE * GRID_SIZE];
+    for (i = 0, j = 0; i < strlen(matrixString); i++) {
+        if (isalpha(matrixString[i])) {
+            temp[j++] = toupper(matrixString[i]);
+        }
+    }
+    temp[j] = '\0';
+
+    // Fill the Playfair matrix with characters from temp
+    for (i = 0; i < GRID_SIZE; i++) {
+        for (j = 0; j < GRID_SIZE; j++) {
+            matrix[i][j] = temp[index++];
+        }
+    }
+}
+
+// Function to handle the plaintext and apply Playfair encryption
+void encryptPlayfair(char *plaintext, char matrix[GRID_SIZE][GRID_SIZE], char *ciphertext) {
+    int len = strlen(plaintext);
+    int i, j, k = 0;
+    char a, b;
+    int row1, col1, row2, col2;
+
+    for (i = 0; i < len; i += 2) {
+        a = toupper(plaintext[i]);
+        b = (i + 1 < len) ? toupper(plaintext[i + 1]) : 'X'; // Append 'X' if no pair
+
+        // Find positions of characters a and b in the matrix
+        for (j = 0; j < GRID_SIZE; j++) {
+            for (int k = 0; k < GRID_SIZE; k++) {
+                if (matrix[j][k] == a) {
+                    row1 = j;
+                    col1 = k;
+                }
+                if (matrix[j][k] == b) {
+                    row2 = j;
+                    col2 = k;
+                }
+            }
+        }
+
+        // Encrypt the digraph according to Playfair rules
+        if (row1 == row2) {
+            // Same row, use letters to the right
+            ciphertext[k++] = matrix[row1][(col1 + 1) % GRID_SIZE];
+            ciphertext[k++] = matrix[row2][(col2 + 1) % GRID_SIZE];
+        } else if (col1 == col2) {
+            // Same column, use letters below
+            ciphertext[k++] = matrix[(row1 + 1) % GRID_SIZE][col1];
+            ciphertext[k++] = matrix[(row2 + 1) % GRID_SIZE][col2];
+        } else {
+            // Forming a rectangle, swap horizontally
+            ciphertext[k++] = matrix[row1][col2];
+            ciphertext[k++] = matrix[row2][col1];
+        }
+    }
+
+    ciphertext[k] = '\0'; // Null terminate the ciphertext string
+}
+
+int main() {
+    char matrixString[] = "MFHIJKUNOPQZVWXYELARGDSTBC"; // Given Playfair matrix
+    char plaintext[] = "Must see you over Cadogan West. Coming at once.";
+    char matrix[GRID_SIZE][GRID_SIZE];
+    char ciphertext[strlen(plaintext)]; // Sufficient length for ciphertext
+
+    // Prepare the Playfair matrix
+    prepareMatrix(matrixString, matrix);
+
+    // Encrypt the plaintext using the Playfair matrix
+    encryptPlayfair(plaintext, matrix, ciphertext);
+
+    // Output the encrypted ciphertext
+    printf("Encrypted ciphertext:\n%s\n", ciphertext);
+
+    return 0;
+}
+output:
+Encrypted ciphertext:
+VTUHTUMHUNNQZRPQXYWHRKSHFUTXYFWXZUKNFUTXQPSQFGFKYU

@@ -1,0 +1,99 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+
+// Function to calculate the greatest common divisor (gcd)
+int gcd(int a, int b) {
+    while (b != 0) {
+        int temp = b;
+        b = a % b;
+        a = temp;
+    }
+    return a;
+}
+
+// Function to find the modular multiplicative inverse of a mod m
+// Returns -1 if inverse doesn't exist
+int mod_inverse(int a, int m) {
+    a = a % m;
+    for (int x = 1; x < m; x++) {
+        if ((a * x) % m == 1) {
+            return x;
+        }
+    }
+    return -1; // Inverse doesn't exist
+}
+
+// Function to perform affine Caesar cipher encryption
+void encrypt(char message[], int a, int b) {
+    for (int i = 0; message[i] != '\0'; ++i) {
+        if (isalpha(message[i])) {
+            if (isupper(message[i])) {
+                message[i] = 'A' + (a * (message[i] - 'A') + b) % 26;
+            } else if (islower(message[i])) {
+                message[i] = 'a' + (a * (message[i] - 'a') + b) % 26;
+            }
+        }
+    }
+}
+
+// Function to perform affine Caesar cipher decryption
+void decrypt(char message[], int a, int b) {
+    int a_inv = mod_inverse(a, 26);
+    if (a_inv == -1) {
+        printf("Decryption is not possible for this key.\n");
+        return;
+    }
+
+    for (int i = 0; message[i] != '\0'; ++i) {
+        if (isalpha(message[i])) {
+            if (isupper(message[i])) {
+                message[i] = 'A' + (a_inv * ((message[i] - 'A' - b + 26) % 26)) % 26;
+            } else if (islower(message[i])) {
+                message[i] = 'a' + (a_inv * ((message[i] - 'a' - b + 26) % 26)) % 26;
+            }
+        }
+    }
+}
+
+int main() {
+    char message[100];
+    int a, b, choice;
+
+    printf("Enter message to encrypt/decrypt: ");
+    fgets(message, sizeof(message), stdin);
+
+    do {
+        printf("Enter coefficient a (must be coprime with 26): ");
+        scanf("%d", &a);
+    } while (gcd(a, 26) != 1);
+
+    printf("Enter coefficient b: ");
+    scanf("%d", &b);
+
+    printf("1. Encrypt\n2. Decrypt\nEnter your choice (1 or 2): ");
+    scanf("%d", &choice);
+
+    switch (choice) {
+        case 1:
+            encrypt(message, a, b);
+            printf("Encrypted message: %s\n", message);
+            break;
+        case 2:
+            decrypt(message, a, b);
+            printf("Decrypted message: %s\n", message);
+            break;
+        default:
+            printf("Invalid choice.\n");
+    }
+
+    return 0;
+}
+output:
+Enter message to encrypt/decrypt: Hello
+Enter coefficient a (must be coprime with 26): 5
+Enter coefficient b: 8
+1. Encrypt
+2. Decrypt
+Enter your choice (1 or 2): 1
+Encrypted message: Fubbe
