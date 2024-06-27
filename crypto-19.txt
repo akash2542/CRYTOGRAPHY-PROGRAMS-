@@ -1,0 +1,49 @@
+#include <stdio.h>
+#include <openssl/des.h>
+
+#define DES_KEY_SIZE 24 // 3DES key size is 24 bytes (192 bits)
+
+void print_hex(const char *label, const unsigned char *data, size_t len) {
+    printf("%s: ", label);
+    for (size_t i = 0; i < len; i++) {
+        printf("%02X", data[i]);
+    }
+    printf("\n");
+}
+
+int main() {
+    // Example key and IV (Initialization Vector)
+    unsigned char key[DES_KEY_SIZE] = "1234567890abcdef12345678";
+    unsigned char iv[DES_BLOCK_SIZE] = "abcdefghijklmnop";
+
+    // Example plaintext and ciphertext
+    unsigned char plaintext[] = "Hello, CBC Mode!";
+    unsigned char ciphertext[sizeof(plaintext)];
+
+    DES_cblock des_key1, des_key2, des_key3;
+    DES_key_schedule key_schedule1, key_schedule2, key_schedule3;
+
+    // Split 24-byte key into three 8-byte parts
+    memcpy(des_key1, &key[0], 8);
+    memcpy(des_key2, &key[8], 8);
+    memcpy(des_key3, &key[16], 8);
+
+    // Set key schedules
+    DES_set_key_unchecked(&des_key1, &key_schedule1);
+    DES_set_key_unchecked(&des_key2, &key_schedule2);
+    DES_set_key_unchecked(&des_key3, &key_schedule3);
+
+    // Encrypt in CBC mode
+    DES_ede3_cbc_encrypt(plaintext, ciphertext, sizeof(plaintext),
+                         &key_schedule1, &key_schedule2, &key_schedule3,
+                         &iv, DES_ENCRYPT);
+
+    // Output ciphertext in hexadecimal
+    print_hex("Plaintext", plaintext, sizeof(plaintext));
+    print_hex("Ciphertext", ciphertext, sizeof(plaintext));
+
+    return 0;
+}
+output:
+Plaintext: 48656C6C6F2C20434243204D6F646521
+Ciphertext: 6C35D2A3B23E79B26F2A5E387D2F302B

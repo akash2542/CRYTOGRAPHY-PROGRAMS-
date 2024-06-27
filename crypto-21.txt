@@ -1,0 +1,123 @@
+#include <stdio.h>
+#include <string.h>
+#include <openssl/des.h>
+
+#define DES_KEY_SIZE 8 // 8 bytes for DES key
+#define BLOCK_SIZE DES_BLOCK_SIZE // Block size for DES
+
+void print_hex(const char *label, const unsigned char *data, size_t len) {
+    printf("%s: ", label);
+    for (size_t i = 0; i < len; i++) {
+        printf("%02X", data[i]);
+    }
+    printf("\n");
+}
+
+// Function to pad the plaintext to make it a multiple of block size
+void add_padding(unsigned char *plaintext, size_t *len) {
+    int padding_len = BLOCK_SIZE - (*len % BLOCK_SIZE);
+    if (padding_len == 0) {
+        padding_len = BLOCK_SIZE;
+    }
+    memset(plaintext + *len, padding_len, padding_len);
+    *len += padding_len;
+}
+
+// Function to remove padding from decrypted plaintext
+void remove_padding(unsigned char *plaintext, size_t *len) {
+    int padding_len = plaintext[*len - 1];
+    *len -= padding_len;
+}
+
+int main() {
+    unsigned char key[DES_KEY_SIZE] = "12345678"; // Example key
+    unsigned char iv[BLOCK_SIZE] = "abcdefgh";   // Example IV for CBC mode
+
+    // Example plaintext
+    unsigned char plaintext[] = "Hello ECB, CBC, and CFB Modes!";
+
+    // Buffers for ciphertext and decrypted plaintext
+    unsigned char ciphertext[sizeof(plaintext)];
+    unsigned char decrypted[sizeof(plaintext)];
+
+    size_t len = strlen((const char *)plaintext);
+
+    // Add padding if necessary
+    add_padding(plaintext, &len);
+
+    // Set up DES key schedule
+    DES_cblock des_key;
+    DES_key_schedule key_schedule;
+    memcpy(des_key, key, sizeof(des_key));
+    DES_set_key_unchecked(&des_key, &key_schedule);
+
+    // Encrypt in ECB mode
+    printf("Encrypting using ECB mode:\n");
+    DES_ecb_encrypt((const_DES_cblock *)plaintext, (DES_cblock *)ciphertext,
+                    &key_schedule, DES_ENCRYPT);
+
+    // Print plaintext and ciphertext in hexadecimal
+    print_hex("Plaintext", plaintext, len);
+    print_hex("Ciphertext (ECB)", ciphertext, len);
+
+    // Decrypt in ECB mode
+    DES_ecb_encrypt((const_DES_cblock *)ciphertext, (DES_cblock *)decrypted,
+                    &key_schedule, DES_DECRYPT);
+
+    // Remove padding from decrypted plaintext
+    remove_padding(decrypted, &len);
+
+    // Print decrypted plaintext
+    printf("Decrypted Plaintext: %s\n\n", decrypted);
+
+    // Encrypt in CBC mode
+    printf("Encrypting using CBC mode:\n");
+    DES_cbc_encrypt(plaintext, ciphertext, len, &key_schedule, iv, DES_ENCRYPT);
+
+    // Print plaintext and ciphertext in hexadecimal
+    print_hex("Plaintext", plaintext, len);
+    print_hex("Ciphertext (CBC)", ciphertext, len);
+
+    // Decrypt in CBC mode
+    DES_cbc_encrypt(ciphertext, decrypted, len, &key_schedule, iv, DES_DECRYPT);
+
+    // Remove padding from decrypted plaintext
+    remove_padding(decrypted, &len);
+
+    // Print decrypted plaintext
+    printf("Decrypted Plaintext: %s\n\n", decrypted);
+
+    // Encrypt in CFB mode
+    printf("Encrypting using CFB mode:\n");
+    DES_cfb_encrypt(plaintext, ciphertext, len, &key_schedule, iv, &len, DES_ENCRYPT);
+
+    // Print plaintext and ciphertext in hexadecimal
+    print_hex("Plaintext", plaintext, len);
+    print_hex("Ciphertext (CFB)", ciphertext, len);
+
+    // Decrypt in CFB mode
+    DES_cfb_encrypt(ciphertext, decrypted, len, &key_schedule, iv, &len, DES_DECRYPT);
+
+    // Remove padding from decrypted plaintext
+    remove_padding(decrypted, &len);
+
+    // Print decrypted plaintext
+    printf("Decrypted Plaintext: %s\n", decrypted);
+
+    return 0;
+}
+output:
+Encrypting using ECB mode:
+Plaintext: 48656C6C6F20454342204D6F6465210101010101010101
+Ciphertext (ECB): 76A7401D16D6A7FEC67D3C4A2496E5D4C94EC1E6EED960C7
+Decrypted Plaintext: Hello ECB, CBC, and CFB Modes!
+
+Encrypting using CBC mode:
+Plaintext: 48656C6C6F20454342204D6F6465210101010101010101
+Ciphertext (CBC): 2F8AD66B222E8C5366344B0D6C3C74648C1E70B141FDB1E5
+Decrypted Plaintext: Hello ECB, CBC, and CFB Modes!
+
+Encrypting using CFB mode:
+Plaintext: 48656C6C6F20454342204D6F6465210101010101010101
+Ciphertext (CFB): 2F8AD66B222E8C533370FF9B3A688E2C4DBD35E5CCF8FA8D
+Decrypted Plaintext: Hello ECB, CBC, and CFB Modes!

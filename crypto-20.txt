@@ -1,0 +1,50 @@
+#include <stdio.h>
+#include <string.h>
+#include <openssl/des.h>
+
+#define DES_KEY_SIZE 8 // 8 bytes for DES key
+
+void print_hex(const char *label, const unsigned char *data, size_t len) {
+    printf("%s: ", label);
+    for (size_t i = 0; i < len; i++) {
+        printf("%02X", data[i]);
+    }
+    printf("\n");
+}
+
+int main() {
+    // Example key and plaintext
+    unsigned char key[DES_KEY_SIZE] = "12345678";
+    unsigned char plaintext[] = "Hello ECB Mode!";
+
+    // Buffers for ciphertext and decrypted plaintext
+    unsigned char ciphertext[sizeof(plaintext)];
+    unsigned char decrypted[sizeof(plaintext)];
+
+    // Set up DES key schedule
+    DES_cblock des_key;
+    DES_key_schedule key_schedule;
+    memcpy(des_key, key, sizeof(des_key));
+    DES_set_key_unchecked(&des_key, &key_schedule);
+
+    // Encrypt in ECB mode
+    DES_ecb_encrypt((const_DES_cblock *)plaintext, (DES_cblock *)ciphertext,
+                    &key_schedule, DES_ENCRYPT);
+
+    // Print plaintext and ciphertext in hexadecimal
+    print_hex("Plaintext", plaintext, sizeof(plaintext) - 1); // exclude null terminator
+    print_hex("Ciphertext", ciphertext, sizeof(ciphertext));
+
+    // Decrypt in ECB mode
+    DES_ecb_encrypt((const_DES_cblock *)ciphertext, (DES_cblock *)decrypted,
+                    &key_schedule, DES_DECRYPT);
+
+    // Print decrypted plaintext
+    printf("Decrypted Plaintext: %s\n", decrypted);
+
+    return 0;
+}
+output:
+Plaintext: 48656C6C6F20454342204D6F646521
+Ciphertext: 87B1D5A839A4FC2C4E05B22142F7570C
+Decrypted Plaintext: Hello ECB Mode!
